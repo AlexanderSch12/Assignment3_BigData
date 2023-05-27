@@ -58,16 +58,16 @@ public class LSH extends SimilaritySearcher {
      * @param seed              seed used for MurmurHash to hash keys
      * @return bandBuckets      buckets of every band with the candidate pairs
      */
-    public List<Map<Integer,List<Integer>>> lsh(int[][] signatureMatrix, int seed)
+    public List<Map<Integer,ArrayList<Integer>>> lsh(int[][] signatureMatrix, int seed)
     {
-        List<Map<Integer,List<Integer>>> bandBuckets = new ArrayList<>(numBands);
+        List<Map<Integer,ArrayList<Integer>>> bandBuckets = new ArrayList<>(numBands);
         int rows = numHashes / numBands;
         byte[] docKey = new byte[rows];
 
         for (int b = 0; b < numBands; b++) {
             // List of Set<Integer> where the index is the hashed doc key in the current band and the Set are the doc
             // id's of the candidate pairs
-            Map<Integer,List<Integer>> buckets = new HashMap<>(numBuckets);
+            Map<Integer,ArrayList<Integer>> buckets = new HashMap<>(numBuckets);
             for (int d = 0; d < numDocs; d++) {
                 // Construct key of current doc in current band
                 for (int r = 0; r < rows; r++) {
@@ -90,11 +90,11 @@ public class LSH extends SimilaritySearcher {
     @Override
     public Set<SimilarPair> getSimilarPairsAboveThreshold(double threshold) {
         Set<SimilarPair> similarPairsAboveThreshold = new HashSet<SimilarPair>();
-        List<Map<Integer,List<Integer>>> bandBuckets = lsh(signatureMatrix, seed);
+        List<Map<Integer,ArrayList<Integer>>> bandBuckets = lsh(signatureMatrix, seed);
 
         for(int b = 0 ; b < numBands ; b++)
         {
-            Map<Integer,List<Integer>> buckets = bandBuckets.get(b);
+            Map<Integer,ArrayList<Integer>> buckets = bandBuckets.get(b);
             for(int bucket = 0 ; bucket < buckets.size() ; bucket++)
             {
                 List<Integer> candidates = buckets.get(bucket);

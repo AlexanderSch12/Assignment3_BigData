@@ -75,6 +75,7 @@ public class LSH extends SimilaritySearcher {
                 }
                 // Hash key using MurmurHash
                 int index = MurmurHash.hash32(docKey, rows, seed) % numBuckets;
+                System.out.println("Index: " + index);
                 buckets.get(index).add(d);
             }
             bandBuckets.add(b, buckets);

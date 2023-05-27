@@ -58,16 +58,16 @@ public class LSH extends SimilaritySearcher {
      * @param seed              seed used for MurmurHash to hash keys
      * @return bandBuckets      buckets of every band with the candidate pairs
      */
-    public List<ArrayList<ArrayList<Integer>>> lsh(int[][] signatureMatrix, int seed)
+    public List<List<List<Integer>>> lsh(int[][] signatureMatrix, int seed)
     {
-        List<ArrayList<ArrayList<Integer>>> bandBuckets = new ArrayList<>(numBands);
+        List<List<List<Integer>>> bandBuckets = new ArrayList<>(numBands);
         int rows = numHashes / numBands;
         byte[] docKey = new byte[rows];
 
         for (int b = 0; b < numBands; b++) {
             // List of Set<Integer> where the index is the hashed doc key in the current band and the Set are the doc
             // id's of the candidate pairs
-            ArrayList<ArrayList<Integer>> buckets = new ArrayList<>(numBuckets);
+            ArrayList<List<Integer>> buckets = new ArrayList<>(numBuckets);
             for (int d = 0; d < numdocs; d++) {
                 // Construct key of current doc in current band
                 for (int r = 0; r < rows; r++) {

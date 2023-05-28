@@ -24,7 +24,6 @@ public class LSH extends SimilaritySearcher {
     int numDocs;
     int seed;
     int[][] signatureMatrix;
-    List<Set<Integer>> documents;
 
     /**
      * Construct an LSH similarity searcher.
@@ -44,11 +43,9 @@ public class LSH extends SimilaritySearcher {
         this.numShingles = reader.getNumShingles();
         this.numDocs = reader.getMaxDocs();
         this.seed = seed;
-        this.documents = reader.readAll();
+        reader.reset();
         int[][] hashValues = Minhash.constructHashTable(numHashes, numShingles, seed);
         this.signatureMatrix = Minhash.constructSignatureMatrix(reader, hashValues);
-
-        getSimilarPairsAboveThreshold(0.8);
     }
 
     /**
@@ -74,15 +71,16 @@ public class LSH extends SimilaritySearcher {
                     buckets.add(new ArrayList<>());
                 }
                 // Construct key of current doc in current band
-                for (int r = 0; r < rows; r++) {
-                    docKey[r] = (byte) signatureMatrix[r][d];
+                for (int row = 0 ; row < rows ; row++) {
+                    docKey[row] = (byte) signatureMatrix[rows*b + row][d];
                 }
                 // Hash key using MurmurHash
-                int index = MurmurHash.hash32(docKey, rows, seed) % numBuckets;
+                int index = Math.abs(MurmurHash.hash32(docKey, rows, seed)) % numBuckets;
                 buckets.get(index).add(d);
             }
-            bandBuckets.add(b, buckets);
+            bandBuckets.add(buckets);
         }
+
         return bandBuckets;
     }
 
@@ -94,6 +92,7 @@ public class LSH extends SimilaritySearcher {
     public Set<SimilarPair> getSimilarPairsAboveThreshold(double threshold) {
         Set<SimilarPair> similarPairsAboveThreshold = new HashSet<SimilarPair>();
         List<List<List<Integer>>> bandBuckets = lsh(signatureMatrix, seed);
+        List<Set<Integer>> documents = reader.readAll();
 
         for(int b = 0 ; b < numBands ; b++)
         {
@@ -108,7 +107,7 @@ public class LSH extends SimilaritySearcher {
                         double sim = jaccardSimilarity(documents.get(i),documents.get(j));
                         if(sim > threshold)
                         {
-                            similarPairsAboveThreshold.add(new SimilarPair(i,j,sim));
+                            similarPairsAboveThreshold.add(new SimilarPair(reader.getExternalId(i),reader.getExternalId(j),sim));
                         }
                     }
                 }

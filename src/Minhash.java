@@ -35,13 +35,13 @@ public final class Minhash {
         int a, b;
         int prime = Primes.findLeastPrimeNumber(numHashes);
 
-        for (int j = 0; j < numHashes; j++) {
+        for (int i = 0; i < numHashes; i++) {
             // h(x) = ((a.x + b) mod p) mod #rows
-            a = rn.nextInt();
-            b = rn.nextInt();
-            for (int i = 0; i < numValues; i++) {
-                hashes[i][j] = ((a * i + b) % prime) % numValues;
-            }
+            a = Math.abs(rn.nextInt(numValues));
+            b = Math.abs(rn.nextInt(numValues));
+            for (int j = 0; j < numValues; j++) {
+                hashes[j][i] = ((a*j + b) % prime) % numValues;
+            }    
         }
         return hashes;
     }
@@ -50,14 +50,16 @@ public final class Minhash {
      * Construct the signature matrix.
      *
      * @param reader     iterator returning the set represenation of objects for which the signature matrix should be constructed
-     * @param hashValues (numValues x numHashes) matrix of hash values --> numHashes x numValues
-     * @return the (numHashes x numObjects) signature matrix
+     * @param hashValues (numValues x numHashes) matrix of hash values
+     * @return signatureMatrix      the signature matrix (numHashes x numObjects) 
      */
     public static int[][] constructSignatureMatrix(Reader reader, int[][] hashValues)
     {
-        int numHashes = hashValues.length;
-        int numValues = hashValues[0].length;
+        int numHashes = hashValues[0].length;
+        int numValues = hashValues.length;
         int numDocs = reader.maxDocs;
+        System.out.println(reader.curDoc);
+        System.out.println(numDocs + " " + reader.hasNext());
         int[][] signatureMatrix = new int[numHashes][numDocs];
 
         // Initialize signature matrix with infinity

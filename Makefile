@@ -21,9 +21,9 @@ THRESHOLD=0.9
 NB_TWEETS=5000000
 SHINGLE_LENGTH=3
 NB_SHINGLES=1000
-NB_HASHES=50
-NB_BANDS=5
-NB_BUCKETS=1000
+NB_HASHES=105
+NB_BANDS=7
+NB_BUCKETS=15000
 
 # Compilation  ###############################################################
 
@@ -82,7 +82,7 @@ bf_small: $(class_d)/Runner.class
 		-maxTweets 5000 \
 		-dataFile ${DATAFOLDER} \
 		-outputFile ${OUTPUT} \
-		-threshold 0.5 \
+		-threshold 0.9 \
 		-shingleLength ${SHINGLE_LENGTH} \
 		-numShingles ${NB_SHINGLES}
 
@@ -93,7 +93,7 @@ lsh_small: $(class_d)/Runner.class
 		-maxTweets 5000 \
 		-dataFile ${DATAFOLDER} \
 		-outputFile ${OUTPUT} \
-		-threshold 0.5 \
+		-threshold 0.9 \
 		-shingleLength ${SHINGLE_LENGTH} \
 		-numShingles ${NB_SHINGLES} \
 		-numHashes ${NB_HASHES} \
@@ -113,3 +113,28 @@ lsh_full: $(class_d)/Runner.class
 		-numHashes ${NB_HASHES} \
 		-numBands ${NB_BANDS} \
 		-numBuckets ${NB_BUCKETS}
+
+lsh_test:
+	for NB_SHINGLES in 100 200 300 400 500 600 700 800 900 1000 1200 1500 ; do \
+		for NB_HASHES in 5 10 20 30 35 40 45 50 55 65 70 80 100 ; do \
+			for NB_BANDS in 5 7 10 12 15 20 ; do \
+				for NB_BUCKETS in 200 400 600 700 800 900 1000 1200 ; do \
+					$(class_d)/Runner.class ;  \
+					echo "-------- SHINGLES: $$NB_SHINGLES HASHES: $$NB_HASHES BANDS: $$NB_BANDS BUCKETS: $$NB_BUCKETS --------" >> out.txt ; \
+					time java -cp .:$(class_d) -Xmx2g Runner \
+						-method lsh \
+						-maxTweets 5000 \
+						-dataFile ${DATAFOLDER} \
+						-outputFile ${OUTPUT} \
+						-threshold 0.9 \
+						-shingleLength ${SHINGLE_LENGTH} \
+						-numShingles $$NB_SHINGLES \
+						-numHashes $$NB_HASHES \
+						-numBands $$NB_BANDS \
+						-numBuckets $$NB_BUCKETS >> out.txt ; \
+					done ; \
+				done ; \
+			done ; \
+		done
+
+

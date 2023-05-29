@@ -5,6 +5,7 @@
 
 import java.util.*;
 import java.io.*;
+import java.sql.Array;
 
 /**
  * Implementation of minhash and locality sensitive hashing (LSH) to find
@@ -15,7 +16,8 @@ import java.io.*;
  * bandToBuckets). From this bandsToBuckets mapping, the most similar items
  * should then be retrieved.
  */
-public class LSH extends SimilaritySearcher {
+public class LSH extends SimilaritySearcher 
+{
 
     int numHashes;
     int numBands;
@@ -48,42 +50,6 @@ public class LSH extends SimilaritySearcher {
         this.signatureMatrix = Minhash.constructSignatureMatrix(reader, hashValues);
     }
 
-    /**
-     *
-     *
-     * @param signatureMatrix   (numHashes x numObjects) signature matrix
-     * @param seed              seed used for MurmurHash to hash keys
-     * @return bandBuckets      buckets of every band with the candidate pairs
-     */
-    public List<List<List<Integer>>> lsh(int[][] signatureMatrix, int seed)
-    {
-        List<List<List<Integer>>> bandBuckets = new ArrayList<>(numBands);
-        int rows = numHashes / numBands;
-        byte[] docKey = new byte[rows];
-
-        for (int b = 0; b < numBands; b++) {
-            // List of Set<Integer> where the index is the hashed doc key in the current band and the Set are the doc
-            // id's of the candidate pairs
-            List<List<Integer>> buckets = new ArrayList<>(numBuckets);
-            for (int d = 0; d < numDocs; d++) {
-                for(int bucket = 0 ; bucket < numBuckets ; bucket++)
-                {
-                    buckets.add(new ArrayList<>());
-                }
-                // Construct key of current doc in current band
-                for (int row = 0 ; row < rows ; row++) {
-                    docKey[row] = (byte) signatureMatrix[rows*b + row][d];
-                }
-                // Hash key using MurmurHash
-                int index = Math.abs(MurmurHash.hash32(docKey, rows, seed)) % numBuckets;
-                buckets.get(index).add(d);
-            }
-            bandBuckets.add(buckets);
-        }
-
-        return bandBuckets;
-    }
-
 
     /**
      * Returns the pairs with similarity above threshold (approximate).
@@ -91,29 +57,38 @@ public class LSH extends SimilaritySearcher {
     @Override
     public Set<SimilarPair> getSimilarPairsAboveThreshold(double threshold) {
         Set<SimilarPair> similarPairsAboveThreshold = new HashSet<SimilarPair>();
-        List<List<List<Integer>>> bandBuckets = lsh(signatureMatrix, seed);
+        int rows = numHashes / numBands;
+        byte[] docKey = new byte[rows];
         List<Set<Integer>> documents = reader.readAll();
 
         for(int b = 0 ; b < numBands ; b++)
         {
-            List<List<Integer>> buckets = bandBuckets.get(b);
-            for(int bucket = 0 ; bucket < buckets.size() ; bucket++)
+            List<List<Integer>> buckets = new ArrayList<>(numBuckets);
+            for(int bucket = 0 ; bucket<numBuckets ; bucket++) buckets.add(new ArrayList<Integer>());
+
+            for (int d = 0; d < numDocs; d++) 
             {
-                List<Integer> candidates = buckets.get(bucket);
-                for(int i = 0 ; i < candidates.size() ; i++)
+                // Construct key of current doc in current band
+                for (int row = 0 ; row < rows ; row++) 
                 {
-                    for(int j = i + 1 ; j < candidates.size() ; j++)
+                    docKey[row] = (byte) signatureMatrix[rows*b + row][d];
+                }
+                // Hash key using MurmurHash
+                int index = Math.abs(MurmurHash.hash32(docKey, rows, seed)) % numBuckets;
+
+                List<Integer> bucketList = buckets.get(index);
+                for(int document : bucketList)
+                {
+                    double sim = jaccardSimilarity(documents.get(document),documents.get(d));
+                    if(sim > threshold)
                     {
-                        double sim = jaccardSimilarity(documents.get(i),documents.get(j));
-                        if(sim > threshold)
-                        {
-                            similarPairsAboveThreshold.add(new SimilarPair(reader.getExternalId(i),reader.getExternalId(j),sim));
-                        }
+                        similarPairsAboveThreshold.add(new SimilarPair(reader.getExternalId(document),reader.getExternalId(d),sim));
                     }
                 }
+                bucketList.add(d);
             }
         }
         return similarPairsAboveThreshold;
     }
-
 }
+

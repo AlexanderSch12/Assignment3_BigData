@@ -37,8 +37,8 @@ public final class Minhash {
 
         for (int i = 0; i < numHashes; i++) {
             // h(x) = ((a.x + b) mod p) mod #rows
-            a = Math.abs(rn.nextInt(numValues));
-            b = Math.abs(rn.nextInt(numValues));
+            a = Math.abs(rn.nextInt(prime));
+            b = Math.abs(rn.nextInt(prime));
             for (int j = 0; j < numValues; j++) {
                 hashes[j][i] = ((a*j + b) % prime) % numValues;
             }    
@@ -56,10 +56,7 @@ public final class Minhash {
     public static int[][] constructSignatureMatrix(Reader reader, int[][] hashValues)
     {
         int numHashes = hashValues[0].length;
-        int numValues = hashValues.length;
         int numDocs = reader.maxDocs;
-        System.out.println(reader.curDoc);
-        System.out.println(numDocs + " " + reader.hasNext());
         int[][] signatureMatrix = new int[numHashes][numDocs];
 
         // Initialize signature matrix with infinity
@@ -72,14 +69,12 @@ public final class Minhash {
         while (reader.hasNext()) {
             Set<Integer> shinglesIndex = reader.next();
             // Loop trough rows of the document
-            for (int r = 0; r < numValues; r++) {
+            for (int row: shinglesIndex) {
                 // If row index is in set, use hash-value for signature
-                if (shinglesIndex.contains(r)) {
-                    for (int h = 0; h < numHashes; h++) {
-                        // If the hash-value is smaller than the current hash-value
-                        if (hashValues[r][h] < signatureMatrix[h][reader.curDoc]) {
-                            signatureMatrix[h][reader.curDoc] = hashValues[r][h];
-                        }
+                for (int h = 0; h < numHashes; h++) {
+                    // If the hash-value is smaller than the current hash-value
+                    if (hashValues[row][h] < signatureMatrix[h][reader.curDoc]) {
+                        signatureMatrix[h][reader.curDoc] = hashValues[row][h];
                     }
                 }
             }

@@ -21,9 +21,9 @@ THRESHOLD=0.9
 NB_TWEETS=5000000
 SHINGLE_LENGTH=3
 NB_SHINGLES=1000
-NB_HASHES=105
-NB_BANDS=7
-NB_BUCKETS=15000
+NB_HASHES=160
+NB_BANDS=10
+NB_BUCKETS=50000
 
 # Compilation  ###############################################################
 

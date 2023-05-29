@@ -26,6 +26,7 @@ public class LSH extends SimilaritySearcher
     int numDocs;
     int seed;
     int[][] signatureMatrix;
+    List<Set<Integer>> documents;
 
     /**
      * Construct an LSH similarity searcher.
@@ -45,9 +46,9 @@ public class LSH extends SimilaritySearcher
         this.numShingles = reader.getNumShingles();
         this.numDocs = reader.getMaxDocs();
         this.seed = seed;
-        reader.reset();
         int[][] hashValues = Minhash.constructHashTable(numHashes, numShingles, seed);
         this.signatureMatrix = Minhash.constructSignatureMatrix(reader, hashValues);
+        this.documents = reader.readAll();
     }
 
 
@@ -59,7 +60,8 @@ public class LSH extends SimilaritySearcher
         Set<SimilarPair> similarPairsAboveThreshold = new HashSet<SimilarPair>();
         int rows = numHashes / numBands;
         byte[] docKey = new byte[rows];
-        List<Set<Integer>> documents = reader.readAll();
+        int TP = 0;
+        int FP = 0;
 
         for(int b = 0 ; b < numBands ; b++)
         {
@@ -82,12 +84,15 @@ public class LSH extends SimilaritySearcher
                     double sim = jaccardSimilarity(documents.get(document),documents.get(d));
                     if(sim > threshold)
                     {
-                        similarPairsAboveThreshold.add(new SimilarPair(reader.getExternalId(document),reader.getExternalId(d),sim));
-                    }
+                        similarPairsAboveThreshold.add(new SimilarPair(reader.getExternalId(document),reader.getExternalId(d),sim)); 
+                        TP++;
+                    } else FP++;
                 }
                 bucketList.add(d);
             }
         }
+        System.out.println("True Positives: " + TP);
+        System.out.println("False Positives: " + FP);
         return similarPairsAboveThreshold;
     }
 }

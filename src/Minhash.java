@@ -66,8 +66,9 @@ public final class Minhash {
 
         /* One Pass Implementation */
         // Loop trough documents first
+        Set<Integer> shinglesIndex;
         while (reader.hasNext()) {
-            Set<Integer> shinglesIndex = reader.next();
+            shinglesIndex = reader.next();
             // Loop trough rows of the document
             for (int row: shinglesIndex) {
                 // If row index is in set, use hash-value for signature
@@ -79,7 +80,7 @@ public final class Minhash {
                 }
             }
         }
-        reader.reset();
+        
         return signatureMatrix;
     }
 }

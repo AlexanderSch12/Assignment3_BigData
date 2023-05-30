@@ -79,9 +79,16 @@ public class Runner {
         long startTime = System.currentTimeMillis();
         System.out.println("Searching items more similar than " + threshold + " ... ");
         Set<SimilarPair> similarItems = searcher.getSimilarPairsAboveThreshold(threshold);
+
+        // SimilaritySearcher searcher1 = new BruteForceSearch(reader);
+        // Set<SimilarPair> bfItems = searcher1.getSimilarPairsAboveThreshold(threshold);
+        // similarItems.retainAll(bfItems);
+
         System.out.println("done! Took " +  (System.currentTimeMillis() - startTime)/1000.0 + " seconds.");
         System.out.println("--------------");
         printPairs(similarItems, outputFile);
+        
+
     }
 
 

@@ -26,7 +26,7 @@ public class LSH extends SimilaritySearcher
     int numDocs;
     int seed;
     int[][] signatureMatrix;
-    List<Set<Integer>> documents;
+    // List<Set<Integer>> documents;
 
     /**
      * Construct an LSH similarity searcher.
@@ -46,9 +46,8 @@ public class LSH extends SimilaritySearcher
         this.numShingles = reader.getNumShingles();
         this.numDocs = reader.getMaxDocs();
         this.seed = seed;
-        int[][] hashValues = Minhash.constructHashTable(numHashes, numShingles, seed);
-        this.signatureMatrix = Minhash.constructSignatureMatrix(reader, hashValues);
-        this.documents = reader.readAll();
+        this.signatureMatrix = Minhash.constructSignatureMatrix(reader, Minhash.constructHashTable(numHashes, numShingles, seed));
+        //this.documents = reader.readAll();
     }
 
 
@@ -58,19 +57,18 @@ public class LSH extends SimilaritySearcher
     @Override
     public Set<SimilarPair> getSimilarPairsAboveThreshold(double threshold) {
         Set<SimilarPair> similarPairsAboveThreshold = new HashSet<SimilarPair>();
+        //Set<SimilarPair> candidates = new HashSet<SimilarPair>();
         int rows = numHashes / numBands;
-        byte[] docKey = new byte[rows];
-        int TP = 0;
-        int FP = 0;
 
         for(int b = 0 ; b < numBands ; b++)
         {
-            List<List<Integer>> buckets = new ArrayList<>(numBuckets);
-            for(int bucket = 0 ; bucket<numBuckets ; bucket++) buckets.add(new ArrayList<Integer>());
+           List<List<Integer>> buckets = new ArrayList<>();
+           for(int bucket = 0 ; bucket<numBuckets ; bucket++) buckets.add(new ArrayList<Integer>());
 
             for (int d = 0; d < numDocs; d++) 
             {
                 // Construct key of current doc in current band
+                byte[] docKey = new byte[rows];
                 for (int row = 0 ; row < rows ; row++) 
                 {
                     docKey[row] = (byte) signatureMatrix[rows*b + row][d];
@@ -78,21 +76,28 @@ public class LSH extends SimilaritySearcher
                 // Hash key using MurmurHash
                 int index = Math.abs(MurmurHash.hash32(docKey, rows, seed)) % numBuckets;
 
-                List<Integer> bucketList = buckets.get(index);
-                for(int document : bucketList)
+                for(int document : buckets.get(index))
                 {
-                    double sim = jaccardSimilarity(documents.get(document),documents.get(d));
+                    //double sim = jaccardSimilarity(documents.get(document),documents.get(d));
+
+                    double sim = 0;
+                    for(int h = 0 ; h<numHashes ; h++)
+                    {
+                        if(signatureMatrix[h][document] == signatureMatrix[h][d]) sim++;
+                    }
+                    sim = sim/numHashes;
+
                     if(sim > threshold)
                     {
-                        similarPairsAboveThreshold.add(new SimilarPair(reader.getExternalId(document),reader.getExternalId(d),sim)); 
-                        TP++;
-                    } else FP++;
+                        //similarPair.sim = sim;
+                        similarPairsAboveThreshold.add(new SimilarPair(reader.getExternalId(document), reader.getExternalId(d), sim)); 
+                    } //else candidates.add(similarPair);              
                 }
-                bucketList.add(d);
+                buckets.get(index).add(d);                
             }
         }
-        System.out.println("True Positives: " + TP);
-        System.out.println("False Positives: " + FP);
+        System.out.println("True Positives: " + similarPairsAboveThreshold.size());
+        //System.out.println("False Positives: " + candidates.size());
         return similarPairsAboveThreshold;
     }
 }

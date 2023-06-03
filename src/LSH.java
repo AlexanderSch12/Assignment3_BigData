@@ -25,7 +25,8 @@ public class LSH extends SimilaritySearcher
     int numShingles;
     int numDocs;
     int seed;
-    int[][] signatureMatrix;
+    short[][] signatureMatrix;
+
     // List<Set<Integer>> documents;
 
     /**
@@ -46,7 +47,7 @@ public class LSH extends SimilaritySearcher
         this.numShingles = reader.getNumShingles();
         this.numDocs = reader.getMaxDocs();
         this.seed = seed;
-        this.signatureMatrix = Minhash.constructSignatureMatrix(reader, Minhash.constructHashTable(numHashes, numShingles, seed));
+        this.signatureMatrix = Minhash.constructSignatureMatrixShort(reader, Minhash.constructHashTableShort(numHashes, numShingles, seed));
         //this.documents = reader.readAll();
     }
 
@@ -56,19 +57,20 @@ public class LSH extends SimilaritySearcher
      */
     @Override
     public Set<SimilarPair> getSimilarPairsAboveThreshold(double threshold) {
-        Set<SimilarPair> similarPairsAboveThreshold = new HashSet<SimilarPair>();
-        //Set<SimilarPair> candidates = new HashSet<SimilarPair>();
+        Set<SimilarPair> similarPairsAboveThreshold = new HashSet<SimilarPair>(10000000);
+        //Set<SimilarPair> candidates = new HashSet<SimilarPair>(5000000);
         int rows = numHashes / numBands;
+        byte[] docKey;
 
         for(int b = 0 ; b < numBands ; b++)
         {
-           List<List<Integer>> buckets = new ArrayList<>();
+           List<List<Integer>> buckets = new ArrayList<>(numBuckets);
            for(int bucket = 0 ; bucket<numBuckets ; bucket++) buckets.add(new ArrayList<Integer>());
 
             for (int d = 0; d < numDocs; d++) 
             {
                 // Construct key of current doc in current band
-                byte[] docKey = new byte[rows];
+                docKey = new byte[rows];
                 for (int row = 0 ; row < rows ; row++) 
                 {
                     docKey[row] = (byte) signatureMatrix[rows*b + row][d];
@@ -79,7 +81,7 @@ public class LSH extends SimilaritySearcher
                 for(int document : buckets.get(index))
                 {
                     //double sim = jaccardSimilarity(documents.get(document),documents.get(d));
-
+                    
                     double sim = 0;
                     for(int h = 0 ; h<numHashes ; h++)
                     {
@@ -87,16 +89,16 @@ public class LSH extends SimilaritySearcher
                     }
                     sim = sim/numHashes;
 
+                    SimilarPair similarPair = new SimilarPair(reader.getExternalId(document), reader.getExternalId(d), sim);
                     if(sim > threshold)
                     {
-                        //similarPair.sim = sim;
-                        similarPairsAboveThreshold.add(new SimilarPair(reader.getExternalId(document), reader.getExternalId(d), sim)); 
-                    } //else candidates.add(similarPair);              
+                        similarPairsAboveThreshold.add(similarPair); 
+                    } //else candidates.add(similarPair);  
+                    
                 }
-                buckets.get(index).add(d);                
+                buckets.get(index).add(d); 
             }
         }
-        System.out.println("True Positives: " + similarPairsAboveThreshold.size());
         //System.out.println("False Positives: " + candidates.size());
         return similarPairsAboveThreshold;
     }

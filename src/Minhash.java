@@ -83,4 +83,55 @@ public final class Minhash {
         
         return signatureMatrix;
     }
+
+        
+    public static short[][] constructHashTableShort(int numHashes, int numValues, int seed)
+    {
+        short[][] hashes = new short[numValues][numHashes];
+
+        Random rn = new Random(seed);
+        int a, b;
+        int prime = Primes.findLeastPrimeNumber(numHashes);
+
+        for (int i = 0; i < numHashes; i++) {
+            // h(x) = ((a.x + b) mod p) mod #rows
+            a = Math.abs(rn.nextInt(prime));
+            b = Math.abs(rn.nextInt(prime));
+            for (int j = 0; j < numValues; j++) {
+                hashes[j][i] = (short) (((a*j + b) % prime) % numValues);
+            }    
+        }
+        return hashes;
+    }
+    
+    public static short[][] constructSignatureMatrixShort(Reader reader, short[][] hashValues)
+    {
+        int numHashes = hashValues[0].length;
+        int numDocs = reader.maxDocs;
+        short[][] signatureMatrix = new short[numHashes][numDocs];
+
+        // Initialize signature matrix with infinity
+        for (short i = 0; i < numHashes; i++) {
+            for (int j = 0; j < numDocs; j++) signatureMatrix[i][j] = Short.MAX_VALUE;
+        }
+
+        /* One Pass Implementation */
+        // Loop trough documents first
+        Set<Integer> shinglesIndex;
+        while (reader.hasNext()) {
+            shinglesIndex = reader.next();
+            // Loop trough rows of the document
+            for (int row: shinglesIndex) {
+                // If row index is in set, use hash-value for signature
+                for (short h = 0; h < numHashes; h++) {
+                    // If the hash-value is smaller than the current hash-value
+                    if (hashValues[row][h] < signatureMatrix[h][reader.curDoc]) {
+                        signatureMatrix[h][reader.curDoc] = hashValues[row][h];
+                    }
+                }
+            }
+        }
+        
+        return signatureMatrix;
+    }
 }

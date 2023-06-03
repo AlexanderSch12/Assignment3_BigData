@@ -76,21 +76,56 @@ public class Runner {
             searcher = new LSH(reader, numHashes, numBands, numBuckets, seed);
         }
 
+        //Set<SimilarPair> bfItems = getPairs(outputFile);
+
         long startTime = System.currentTimeMillis();
         System.out.println("Searching items more similar than " + threshold + " ... ");
         Set<SimilarPair> similarItems = searcher.getSimilarPairsAboveThreshold(threshold);
-
-        // SimilaritySearcher searcher1 = new BruteForceSearch(reader);
-        // Set<SimilarPair> bfItems = searcher1.getSimilarPairsAboveThreshold(threshold);
-        // similarItems.retainAll(bfItems);
-
         System.out.println("done! Took " +  (System.currentTimeMillis() - startTime)/1000.0 + " seconds.");
         System.out.println("--------------");
-        printPairs(similarItems, outputFile);
-        
 
+        System.out.println("Similar pairs size: " + similarItems.size());
+        // Set<SimilarPair> TP = new HashSet<>(similarItems);
+        // TP.retainAll(bfItems);
+        // System.out.println("TP: " + TP.size());
+
+        // Set<SimilarPair> FP = new HashSet<>(similarItems);
+        // FP.removeAll(TP);
+        // System.out.println("FP: " + FP.size());
+
+        // Set<SimilarPair> FN = new HashSet<>(bfItems);
+        // FN.removeAll(similarItems);
+        // System.out.println("FN: " + FN.size());
+
+        // double total = (double) TP.size() + FP.size();
+        // double precision = TP.size() / total;
+        // System.out.println("Precision: " + precision);
+
+        // double total1 = (double) TP.size() + FN.size();
+        // double recall = TP.size() / total1;
+        // System.out.println("Recall: " + recall);
+        printPairs(similarItems, outputFile);
     }
 
+    public static Set<SimilarPair> getPairs(String outputFile){
+        Set<SimilarPair> set = new HashSet<>();
+        try { 
+                File file = new File(outputFile);
+                BufferedReader br = new BufferedReader(new FileReader(file));
+                String str;
+
+                while ((str = br.readLine()) != null)
+                {
+                    String[] part = str.split("\t");
+                    set.add(new SimilarPair(Long.parseLong(part[0]), Long.parseLong(part[1]),Double.parseDouble(part[2])));
+                    
+                }
+                br.close();
+            }catch(Exception e) {
+            e.printStackTrace();
+            }
+            return set;   
+    }
 
     /**
      * Prints pairs and their similarity.
